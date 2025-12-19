@@ -11,6 +11,7 @@ module ReActionView
                     file_path.empty? ? nil : ::Pathname.new(file_path)
                   end
       @fullpath = @filename&.to_s || "unknown"
+      @stats = ActiveRecord::RuntimeRegistry.respond_to?(:stats) ? ".stats" : ""
     end
 
     def visit_document_node(node)
@@ -21,8 +22,8 @@ module ReActionView
 
     def inject_timing_start(document_node)
       document_node.children.unshift create_erb_code_node("__reactionview_timing_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)")
-      document_node.children.unshift create_erb_code_node("__reactionview_queries_count_start = ActiveRecord::RuntimeRegistry.queries_count")
-      document_node.children.unshift create_erb_code_node("__reactionview_cached_queries_count_start = ActiveRecord::RuntimeRegistry.cached_queries_count")
+      document_node.children.unshift create_erb_code_node("__reactionview_queries_count_start = ActiveRecord::RuntimeRegistry#{@stats}.queries_count")
+      document_node.children.unshift create_erb_code_node("__reactionview_cached_queries_count_start = ActiveRecord::RuntimeRegistry#{@stats}.cached_queries_count")
     end
 
     def inject_timing_end(document_node) # rubocop:disable Metrics/MethodLength
@@ -34,10 +35,10 @@ module ReActionView
       children << create_erb_code_node("__reactionview_timing_end = Process.clock_gettime(Process::CLOCK_MONOTONIC)")
       children << create_erb_code_node("__reactionview_timing_ms = ((__reactionview_timing_end - __reactionview_timing_start) * 1000).round(2)")
 
-      children << create_erb_code_node("__reactionview_queries_count_end = ActiveRecord::RuntimeRegistry.queries_count")
+      children << create_erb_code_node("__reactionview_queries_count_end = ActiveRecord::RuntimeRegistry#{@stats}.queries_count")
       children << create_erb_code_node("__reactionview_queries_count = (__reactionview_queries_count_end - __reactionview_queries_count_start)")
 
-      children << create_erb_code_node("__reactionview_cached_queries_count_end = ActiveRecord::RuntimeRegistry.cached_queries_count")
+      children << create_erb_code_node("__reactionview_cached_queries_count_end = ActiveRecord::RuntimeRegistry#{@stats}.cached_queries_count")
       children << create_erb_code_node("__reactionview_cached_queries_count = (__reactionview_cached_queries_count_end - __reactionview_cached_queries_count_start)") # rubocop:disable Layout/LineLength
 
       ruby_code = <<~RUBY

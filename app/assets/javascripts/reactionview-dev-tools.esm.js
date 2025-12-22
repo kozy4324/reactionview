@@ -1293,14 +1293,21 @@ class HerbOverlay {
             parent.style.outlineOffset = parent.tagName.toLowerCase() === 'html' ? '-2px' : '2px';
             parent.classList.add('show-outline');
             parent.setAttribute('data-herb-debug-attached-outline-type', type);
-            parent.style.position = 'relative';
+            if (window.getComputedStyle(parent).position === 'static') {
+                parent.style.position = 'relative';
+            }
             label.style.position = 'absolute';
             label.style.top = '0';
             label.style.left = '0';
             parent.appendChild(label);
             return;
         }
-        element.style.position = 'relative';
+        if (element.localName === 'html' || window.getComputedStyle(element).overflowY !== 'visible') {
+            label.style.top = '0';
+        }
+        if (window.getComputedStyle(element).position === 'static') {
+            element.style.position = 'relative';
+        }
         element.appendChild(label);
     }
     removeOverlayLabel(element) {
